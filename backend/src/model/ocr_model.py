@@ -98,3 +98,69 @@ class OCRModel:
         except Exception as e:
             logger.error(f"Error in text recognition: {e}")
             raise
+
+    def train(self, train_data, validation_data, epochs=10, batch_size=32):
+        """Train the model on custom dataset"""
+        logger.info(f"Starting model training for {epochs} epochs...")
+        
+        try:
+            # Configure training parameters
+            optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+            loss = tf.keras.losses.SparseCategoricalCrossentropy()
+            
+            # Compile model
+            self.tf_model.compile(
+                optimizer=optimizer,
+                loss=loss,
+                metrics=['accuracy']
+            )
+            
+            # Train model
+            history = self.tf_model.fit(
+                train_data,
+                validation_data=validation_data,
+                epochs=epochs,
+                batch_size=batch_size,
+                callbacks=[
+                    tf.keras.callbacks.EarlyStopping(
+                        monitor='val_loss',
+                        patience=3,
+                        restore_best_weights=True
+                    ),
+                    tf.keras.callbacks.ModelCheckpoint(
+                        'models/best_model.h5',
+                        save_best_only=True
+                    )
+                ]
+            )
+            
+            logger.info("Model training completed successfully")
+            return history
+            
+        except Exception as e:
+            logger.error(f"Error during model training: {e}")
+            raise
+
+    def evaluate(self, test_data):
+        """Evaluate model performance on test data"""
+        logger.info("Evaluating model performance...")
+        
+        try:
+            results = self.tf_model.evaluate(test_data)
+            metrics = dict(zip(self.tf_model.metrics_names, results))
+            
+            logger.info(f"Evaluation metrics: {metrics}")
+            return metrics
+            
+        except Exception as e:
+            logger.error(f"Error during model evaluation: {e}")
+            raise
+
+    def save_model(self, path: str):
+        """Save the trained model"""
+        try:
+            self.tf_model.save(path)
+            logger.info(f"Model saved successfully to {path}")
+        except Exception as e:
+            logger.error(f"Error saving model: {e}")
+            raise

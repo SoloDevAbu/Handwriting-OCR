@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 import uvicorn
 from pathlib import Path
@@ -22,6 +23,9 @@ from utils.error_handlers import (
 )
 from utils.logger import setup_logger, log_request
 from config import settings
+
+# Import training router
+from training import router as training_router
 
 # Initialize logger
 setup_logger()
@@ -48,6 +52,16 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 # Initialize OCR model
 ocr_model = None
+
+# Create training directory if it doesn't exist
+training_dir = Path(__file__).parent.parent / "training"
+training_dir.mkdir(exist_ok=True)
+
+# Mount static files for model visualizations
+app.mount("/training-files", StaticFiles(directory=str(training_dir)), name="training-files")
+
+# Include training router
+app.include_router(training_router)
 
 @app.on_event("startup")
 async def startup_event():
